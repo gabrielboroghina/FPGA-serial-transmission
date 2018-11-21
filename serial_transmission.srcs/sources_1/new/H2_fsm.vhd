@@ -4,7 +4,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity H2_fsm is
     Port ( start, RXready, reset, num12, Dreq, clk : in STD_LOGIC;
-           TXready, rdy, load, depl, Ddisp : out STD_LOGIC);
+           TXready, rdy, load, depl, Ddisp : out STD_LOGIC;
+           st : out STD_LOGIC_vector(3 downto 0));
 end H2_fsm;
 
 architecture Behavioral of H2_fsm is
@@ -18,6 +19,7 @@ begin
         elsif rising_edge(clk) then
             case state is
                 when S0 =>
+                    TXready <= '0';
                     rdy <= '1';
                     if start = '1' then
                         state <= S1;
@@ -46,8 +48,8 @@ begin
                     
                 when S5 =>
                     TXready <= '1';
-                    depl <= '0';
                     if RXready = '1' then
+                        depl <= '0';
                         state <= S0;
                     else
                         state <= S5;
@@ -56,4 +58,12 @@ begin
             end case;
         end if;
     end process;
+    
+    with state select st <=
+        "0000" when S0,
+        "0001" when S1,
+        "0010" when S2,
+        "0011" when S3,
+        "0100" when S4,
+        "0101" when S5;
 end Behavioral;
