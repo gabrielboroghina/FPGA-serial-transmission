@@ -11,7 +11,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity top is
     Port ( D : in STD_LOGIC_VECTOR (7 downto 0);
-           clk, reset, start : in STD_LOGIC;
+           clk, reset, start, dreq, rxready : in STD_LOGIC;
            serial_out, ready : out STD_LOGIC;
            st : out STD_LOGIC_vector(3 downto 0) );
 end top;
@@ -53,16 +53,16 @@ architecture Behavioral of top is
                st : out STD_LOGIC_vector(3 downto 0));
     end component;
     
-    signal parity, depl, load, fdrse_s, fdrse_r, not_reset, load_s, depl_s, s1_in : STD_LOGIC;
-    signal sli_in, sli_in_2, D_fdrse_2, clr_num12, ready_s, num12_in, TXready_out : STD_LOGIC;
+    signal parity, fdrse_s, fdrse_r, not_reset, load_s, depl_s, s1_in : STD_LOGIC;
+    signal sli_in, sli_in_2, D_fdrse_2, clr_num12, ready_s, num12_in, TXready_out, serial : STD_LOGIC;
     signal Q_num12 : STD_LOGIC_VECTOR (3 downto 0);
     signal st_aux : STD_LOGIC_vector(3 downto 0);
 begin
     parity_gen: parity_generator PORT MAP(D => D, parity => parity);
     
-    fdrse_s <= load and parity;
-    fdrse_r <= load and (not parity);
-    fdrse_block: FDRSE PORT MAP(CLK => clk, R => fdrse_r, S => fdrse_s, CE => depl, D => '1', Q => sli_in);
+    fdrse_s <= load_s and parity;
+    fdrse_r <= load_s and (not parity);
+    fdrse_block: FDRSE PORT MAP(CLK => clk, R => fdrse_r, S => fdrse_s, CE => depl_s, D => '1', Q => sli_in);
     
     not_reset <= not reset;
     s1_in <= depl_S or load_s;
@@ -81,10 +81,10 @@ begin
                             Q => Q_num12, CEO => open, TC => open);
                
     num12_in <= (not Q_num12(0)) and (not Q_num12(1)) and Q_num12(2) and Q_num12(3);
-    fsm: H2_fsm PORT MAP (start => start, RXready => '1', reset => reset, num12 => num12_in, Dreq => '1', clk => clk,
+    fsm: H2_fsm PORT MAP (start => start, RXready => rxready, reset => reset, num12 => num12_in, Dreq => dreq, clk => clk,
                           TXready => TXready_out, rdy => open, load => load_s, depl => depl_s, Ddisp => open, st=>st_aux);
                           
     op_ready : FDCE PORT MAP (CLK => clk, CLR => reset, CE => TXready_out, D => '1', Q => ready_s);
     ready <= ready_s;
-    st <= st_aux;
+    st <= Q_num12;
 end Behavioral;

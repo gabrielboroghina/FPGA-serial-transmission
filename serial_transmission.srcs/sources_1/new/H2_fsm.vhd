@@ -16,10 +16,13 @@ begin
     begin
         if (reset = '1') then
             state <= S0; -- reset state
+            TXready <= '0';
+            depl <= '0';
+            load <= '0';
+            Ddisp <= '0';
         elsif rising_edge(clk) then
             case state is
                 when S0 =>
-                    TXready <= '0';
                     rdy <= '1';
                     if start = '1' then
                         state <= S1;
@@ -30,6 +33,7 @@ begin
                     state <= S2;
                     
                 when S2 =>
+                    load <= '0';
                     Ddisp <= '1';
                     if Dreq = '1' then
                         state <= S3;
@@ -41,19 +45,22 @@ begin
                     
                 when S4 =>
                     if num12 = '1' then
+                        TXready <= '1';
+                        depl <= '0';
                         state <= S5;
-                    else
-                        state <= S3;
                     end if;
                     
                 when S5 =>
-                    TXready <= '1';
                     if RXready = '1' then
+                        TXready <= '0';
                         depl <= '0';
+                        load <= '0';
+                        Ddisp <= '0';
                         state <= S0;
                     else
                         state <= S5;
                     end if;
+                    
                 when others => NULL;
             end case;
         end if;
